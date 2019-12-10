@@ -5,17 +5,20 @@ output: html_notebook
 ---
 ## Research Question
 
-
+Our overarching research question for our project was to determine which variables about a movie have the highest positive correlation with its imbd score. An imdb score is a common measure created as an aggregate score of movie critic reviews, so the higher the imdb score, the better reviews that movie has recieved. To answer our research question, we explored several variables in our movie dataset individual, picked those with the most promise, and then charted those selected variables together. In addition, we created a regression tree with said variables to show what choices a machine learning model would make to predict an imdb score.
 
 
 ## Front Matter
 
-
+Here are the library packages we used
 ```{r}
 #Libraries used
 library(mosaic)
 library(tidyverse)
 library(DataComputing)
+library(party)
+library(rpart)
+library(rpart.plot)
 ```
 
 
@@ -23,9 +26,9 @@ library(DataComputing)
 
 Below is the code which reads in the 2 csv files used for this analysis, which are called "dataset_1_raw" and "dataset_2_raw" for now.
 
-The first dataset we used is a csv file of 5000 Movies where each instance is a distict movie with additional info like director, budget, revenuse, etc.
+The first dataset we used is a csv file of 5000 Movies where each instance is a distict movie with additional info like director, budget, revenue, etc.
 
-The Second dataset is a similar dataset about Movies with additional columns like runtime and release dates.
+The Second dataset is a similar dataset about Movies with additional columns like runtime and release year.
 ```{r}
 # retrieving both csv datasets
 dataset_1_raw = read_csv("movie_data.csv")
@@ -39,7 +42,7 @@ Below are some lines to inspect both datasets using the head() R function. I use
 dataset_1_raw %>%
   head(5)
 ```
-Since the second dataset (dataset_2_raw) contains several variables with long string values, only useful variable to quick view were selected to inspect
+Since the second dataset (dataset_2_raw) contains several variables with long string values, only useful variables were selected for a quick view of the data.
 ```{r}
 dataset_2_raw %>%
   select(original_title, revenue, id, genres)%>%
@@ -72,6 +75,7 @@ Here we remove variables from our main dataset by selecting all variables we wan
 
 
 ```{r}
+#movie_data is the final combined dataset of the two previous datasets
 movie_data<-
   dataset_1_raw%>%
     left_join(dataset_2_updated, by = c("movie_title"= "original_title"))
@@ -86,7 +90,7 @@ Above we finally join the relevant information from dataset_2_updated to the mai
 ## Basic Summary Statistics and Overview
 
 
-Since the research question asks what factors in to top level imdb scores, below is a view of the top 25 movies titles based of their imbd score
+Since the research question asks what factors-in to top level imdb scores, below is a view of the top 25 movies titles based of their imbd score
 
 ```{r}
 movie_data%>%
@@ -117,7 +121,7 @@ movie_data%>%
   arrange(desc(average_imdb_score))%>%
   head(25)
 ```
-It seems from the above view that directors who've only directred one movie do well for imdb_scores, to explore this further, below is a plot showing directors charted by the number of movies and imdb scores
+It seems from the above view that directors who've only directed one movie do well for imdb_scores, to explore this further, below is a plot showing directors charted by the number of movies they've directed and imdb scores
 
 
 
@@ -162,7 +166,7 @@ movie_data%>%
   select(content_rating, imdb_score)%>%
   group_by(content_rating)%>%
   summarise(average_imdb_score = mean(imdb_score), number_of_movies = n())%>%
-  filter(! grepl("TV|NC-17|Approved|Passed|GP|M", content_rating))%>%
+  filter(! grepl("TV|NC-17|Approved|Passed|GP|M", content_rating))%>% #filters out several content ratings because there are not relevant
   arrange(desc(average_imdb_score))%>%
   ggplot(aes(x = content_rating, y = average_imdb_score)) +
   geom_histogram(stat = "identity")+
@@ -171,11 +175,124 @@ movie_data%>%
 
 
 
-As we can see the content_rating doesn't seem to have much impact on the imdb score so it probably should have a negligible use in our final chart.
+As we can see the content_rating doesn't seem to have much impact on the imdb score so it probably shouldn't be used in our final chart.
 
 
 ## Multi-Variable Graph
 
-To get a detailed view of which movies recieve higher imdbs, it would be useful to create a chart that incorporates multiple variables and there draw conclusions.
+To get a detailed view of which movies recieve higher imdbs, it would be useful to create a chart that incorporates multiple variables and then draw conclusions. Below are lines of code that creates a selected dataset we want to use for this graphic from the main dataset. We select only the relevant variable, and filter out unwanted content_ratings like before
+
+```{r}
+final_chart_data<-
+  movie_data%>%
+    select(movie_title, imdb_score, content_rating, title_year, revenue)%>%
+    mutate(revenue = revenue/1000000)%>% #this line changes the revenue from dollars into millions of dollar
+  #so that it is more comprehensible as a graphic
+    filter(! grepl("TV|NC-17|Approved|Passed|GP|M", content_rating))
+```
 
 
+Below is a view that shows how many movies came out in each year, to get a good idea of the distribution of title year.
+```{r}
+final_chart_data%>%
+  select(movie_title, title_year)%>%
+  group_by(title_year)%>%
+  summarise(num = n())
+```
+
+
+
+For our final graphic, we want a better way to display info about the title year without having 50 or so years represented, to do this we use regular expression and the gsub function to alter every release year to its corresponding decade so we can get a more general analysis. Also since the title_year variable now represents the release decade, we renamed that variable to decade.
+```{r}
+final_chart_data<-
+  final_chart_data%>%
+  mutate(title_year = gsub(pattern = "201.", replacement = "2010", title_year))%>%
+  mutate(title_year = gsub(pattern = "200.", replacement = "2000", title_year))%>%
+  mutate(title_year = gsub(pattern = "199.", replacement = "1990", title_year))%>%
+  mutate(title_year = gsub(pattern = "198.", replacement = "1980", title_year))%>%
+  mutate(title_year = gsub(pattern = "197.", replacement = "1970", title_year))%>%
+  mutate(title_year = gsub(pattern = "196.", replacement = "1960", title_year))%>%
+  mutate(title_year = gsub(pattern = "195.", replacement = "1950", title_year))%>%
+  mutate(title_year = gsub(pattern = "194.", replacement = "1940", title_year))%>%
+  mutate(title_year = gsub(pattern = "193.", replacement = "1930", title_year))%>%
+  mutate(title_year = gsub(pattern = "192.", replacement = "1920", title_year))%>%
+  mutate(title_year = gsub(pattern = "191.", replacement = "1910", title_year))%>%
+  rename(decade = title_year)
+```
+
+
+
+Here is a new chart showing how many movies were came out in each decade
+```{r}
+final_chart_data%>%
+  select(movie_title, decade)%>%
+  group_by(decade)%>%
+  summarise(num = n())
+```
+
+
+We knew beforehand that the release year and revenue variable were probably important for the imdb score. But to make sure, here are two graphics that chart each of those variable against imdb scores
+```{r}
+final_chart_data %>% 
+  ggplot(aes(x = decade, y = imdb_score)) +
+  geom_point()
+```
+
+
+
+```{r}
+final_chart_data %>% 
+  ggplot(aes(x = imdb_score, y = revenue)) +
+  geom_point()+
+  ylim(0, 1000)
+```
+
+
+
+
+Finally, here is the multivariable graphic that charts both revenue and release decade against the imdb score.
+```{r}
+final_chart_data%>%
+  ggplot(aes(x = imdb_score, y= revenue))+
+  geom_point(aes(color = decade))+
+  ylim(0, 2000)
+```
+As we can see, there is a positive correlation between a movie's revenue and its imdb score. Also it appears from the graphic that older movies, say <1960, seem to have higher imdb scores that newer movies.
+
+
+
+
+Below is the same graphic but with the content_rating variable incorporated (and using the release decade variable as a facet)
+```{r}
+final_chart_data%>%
+  ggplot(aes(x = imdb_score, y= revenue))+
+  geom_point(aes(color = content_rating))+
+  ylim(0, 2000)+
+  facet_wrap(~decade)
+```
+
+It is difficult to say if the content rating in conjuction with other variables play a significant role in the imdb score, but the conclusion made in the previous graphic seem to stand.
+
+
+
+
+## Using a Decision Tree to Find Important Variables
+
+Below is a regression tree we used that incoporates the revenue, content rating, and release decade to predict the imdb score.
+
+```{r}
+model1 <- rpart(
+  imdb_score ~ revenue + decade + content_rating,
+  data = final_chart_data)
+prp(model1)
+```
+
+
+
+
+The regression tree seems to have come to the same conclusions we made in our multivariable graphics, movies with larger revenues move towards higher imdb scores, as well as older movies (in the tree it is categorized as <1980)
+
+
+## Findings
+
+After exploring several variables in our movie dataset through summary views, graphics, and a machine learning model, we came to the conclusion that a movie's revenue and the year/decade it was released it have the largest correlation with the movie's imdb score. For revenue, the correlation was position, so the more revenue the movie makes, the higher imdb score it tends to have.  The correlation between release decade and imdb score, however, was negative, whichs means the older the movie, the higher the imdb score.  While we have only found correlation between these variables, it is interesting to think about how factors like revenue and release date could influence and alter how well it is recieved/reviewed.

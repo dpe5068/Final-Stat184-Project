@@ -19,9 +19,14 @@ output:  html_notebook
 
 (A) .Rmd Line numbers where at least two different data sources are imported:  
 
+34
+35
 
 (B) .Rmd Line numbers for inspecting data intake:  
 
+41-44
+46-51
+57-64
 
 ### Data Wrangling (5 out of 8 required)
 
@@ -30,28 +35,40 @@ output:  html_notebook
 
 (A) .Rmd Line number(s) for general data wrangling: 
 
+128-135
+154-161
 
 (B) .Rmd Line number(s) for a join operation: 
 
+77-81
 
 (C) .Rmd Line number(s) for a spread or gather operation (or equivalent):
 
+NA
 
 (D) .Rmd Line number(s) for use of regular expressions: 
 
+148-152
+154-161
+206-221
 
 (E) .Rmd Line number(s) for use of reduction and/or transformation functions: 
 
+117-123
+128-135
+196-201
 
 (F) .Rmd Line number(s) for use of user-defined functions: 
 
+NA
 
 (G) .Rmd Line number(s) for use of loops and/or control flow: 
 
+NA
 
 (H) .Rmd Line number(s) for use of machine learning (not "wrangling" but scored here): 
 
-
+283-288
 
 ### Data Visualization (3 of 5 required)
 
@@ -60,15 +77,26 @@ output:  html_notebook
 
 (A) .Rmd Line number(s) for use of mulitple different geoms:  
 
+136-139
+171-174
+266-272
+
 (B) .Rmd Line number(s) for use of multiple aesthetics:  
+
+254-259
+266-272
 
 (C) .Rmd Line number(s) for use of layered graphics:  
 
+NA
+
 (D) .Rmd Line number(s) for use of leaflet maps:  
+
+NA
 
 (E) .Rmd Line number(s) for use of decision tree or dendogram results:    
 
-
+283-288
 
 
 ### Other requirements (Nothing for you to report in this Guidance Document)
